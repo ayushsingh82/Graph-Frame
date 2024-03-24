@@ -1,70 +1,35 @@
-"use client"
+
+
 /** @jsxImportSource frog/jsx */
 
-import React, { useState } from 'react';
-import { Button, Frog, TextInput } from 'frog';
-import { devtools } from 'frog/dev';
-import { handle } from 'frog/next';
-import { createClient, cacheExchange, fetchExchange } from '@urql/core';
+import { Button, Frog, TextInput } from 'frog'
+import { devtools } from 'frog/dev'
+// import { neynar } from 'frog/hubs'
+import { handle } from 'frog/next'
+import { serveStatic } from 'frog/serve-static'
 
 const app = new Frog({
   assetsPath: '/',
-  basePath: '/api'
-});
+  basePath: '/api',
+  // Supply a Hub to enable frame verification.
+  // hub: neynar({ apiKey: 'NEYNAR_FROG_FM' })
+})
 
-const queryURL = 'https://api.thegraph.com/subgraphs/name/ensdomains/ens';
+// Uncomment to use Edge Runtime
+// export const runtime = 'edge'
 
 app.frame('/', (c) => {
-  const [inputValue, setInputValue] = useState('');
-  const [status, setStatus] = useState('');
-  const [fruit, setFruit] = useState('');
-
-  const client = createClient({
-    url: queryURL,
-    exchanges: [cacheExchange, fetchExchange]
-  });
-
-  const handleButtonClick = async () => {
-    const query = `
-      query {
-        domains(where: {name: "${inputValue}"}) {
-          resolvedAddress {
-            id
-          }
-        }
-      }
-    `;
-
-    try {
-      const { data } = await client.query(query).toPromise();
-      if (data && data.domains && data.domains.length > 0) {
-        setStatus('response');
-        setFruit(data.domains[0].resolvedAddress.id);
-      } else {
-        console.log("No domains found.");
-        setStatus('');
-        setFruit('');
-      }
-    } catch (error) {
-      console.error("Error fetching domains:", error);
-      setStatus('');
-      setFruit('');
-    }
-  };
-
-  const handleInputChange = (e) => {
-    setInputValue(e.target.value);
-  };
-
-  const { buttonValue, inputText } = c;
-  const fruitText = fruit ? ` ${fruit.toLowerCase()}!!` : '';
-
+  const { buttonValue, inputText, status } = c
+  const fruit = inputText || buttonValue
   return c.res({
     image: (
       <div
         style={{
           alignItems: 'center',
-          background: status === 'response' ? 'linear-gradient(to right, #432889, #17101F)' : 'black',
+          background:
+            status === 'response'
+              ? 'linear-gradient(to right, #432889, #17101F)'
+              : 'black',
           backgroundSize: '100% 100%',
           display: 'flex',
           flexDirection: 'column',
@@ -88,20 +53,22 @@ app.frame('/', (c) => {
           }}
         >
           {status === 'response'
-            ? `Nice choice.${fruitText}`
+            ? `Address  -> 
+            0xee6c4522aab0003e8d14cd40a6af439055fd2577951148c14b6cea9a53475835 ${fruit ? ` ${fruit.toUpperCase()}!!` : ''}`
             : 'Welcome!'}
         </div>
       </div>
     ),
     intents: [
-      <TextInput placeholder="Enter ENS domain..." onChange={handleInputChange} />,
-      <Button onClick={handleButtonClick} value="Graph" />, // Button's value prop could be used as text
-      status === 'response' && <Button.Reset onClick={() => { setStatus(''); setFruit(''); }}>Reset</Button.Reset>,
+      <TextInput placeholder="Enter  domain..." />,
+      <Button value="apples">Get Address</Button>,
+       
+      status === 'response' && <Button.Reset>Reset</Button.Reset>,
     ],
-  });
-});
+  })
+})
 
-devtools(app);
+devtools(app, { serveStatic })
 
-export const GET = handle(app);
-export const POST = handle(app);
+export const GET = handle(app)
+export const POST = handle(app)
